@@ -1,7 +1,7 @@
 import pygame, number
 from pygame.locals import *
 from pygame import mixer
-import sys, mainMenu,  option
+import mainMenu,  option
 import game
 
 WHITE = (255, 255, 255)

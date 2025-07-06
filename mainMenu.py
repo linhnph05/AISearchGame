@@ -14,21 +14,17 @@ pygame.init()
 FPS = 60
 fpsClock = pygame.time.Clock()
 
-# Screen, Caption
 screen = pygame.display.set_mode((number.WINDOWWIDTH, number.WINDOWHEIGHT))
 pygame.display.set_caption('Rush Hour Solver')
 
-# Icon
 icon = pygame.image.load("Resource/icon.png")
 pygame.display.set_icon(icon)
 
-# Fonts
 fontHeading = pygame.font.SysFont('Arial', 70, bold=True)
 fontSubheading = pygame.font.SysFont('Arial', 30, bold=True)
 fontInline = pygame.font.SysFont('Arial', 28, bold=True)
 
 def drawRoundedRect(surface, color, rect, radius=15):
-    """Draw a rounded rectangle"""
     rect = pygame.Rect(rect)
     pygame.draw.rect(surface, color, rect, border_radius=radius)
     return rect
@@ -81,13 +77,13 @@ playButton = Button(
     350, 60, "Play Game", fontInline
 )
 
-optionsButton = Button(
-    number.WINDOWWIDTH//2 - 175, number.WINDOWHEIGHT//2 + 120, 
-    350, 60, "Options", fontInline
-)
+# optionsButton = Button(
+#     number.WINDOWWIDTH//2 - 175, number.WINDOWHEIGHT//2 + 120, 
+#     350, 60, "Options", fontInline
+# )
 
 exitButton = Button(
-    number.WINDOWWIDTH//2 - 175, number.WINDOWHEIGHT//2 + 200, 
+    number.WINDOWWIDTH//2 - 175, number.WINDOWHEIGHT//2 + 120, 
     350, 60, "Exit", fontInline
 )
 
@@ -107,7 +103,6 @@ def mainmenux():
     
     screen.blit(background, (0, 0))
     
-    # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -129,10 +124,7 @@ def mainmenux():
     playButton.draw(screen, mousePosition)
     if playButton.handleClick(click):
         number.currentScreen = 1
-    
-    optionsButton.draw(screen, mousePosition)
-    if optionsButton.handleClick(click):
-        number.currentScreen = 2
+
     
     exitButton.draw(screen, mousePosition)
     if exitButton.handleClick(click):
@@ -140,7 +132,6 @@ def mainmenux():
         sys.exit()
         
     screen.blit(playIcon, (600, 538))
-    screen.blit(settingIcon, (610, 625))
-    screen.blit(exitIcon, (620, 705))
+    screen.blit(exitIcon, (620, 625))
     pygame.display.update()
     fpsClock.tick(FPS)

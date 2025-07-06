@@ -1,72 +1,61 @@
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Dict, Set
 import heapq
-import tracemalloc
-import time
 from collections import deque
 
 @dataclass(frozen=True)
 class Vehicle:
-    vehicleId: int        # ID (0 = xe đỏ)
-    row: int             # hàng ô đầu
-    col: int             # cột ô đầu
-    length: int          # chiều dài (2 hoặc 3)
-    isHorizontal: bool   # True = ngang, False = dọc
+    vehicleId: int       
+    row: int             
+    col: int             
+    length: int          
+    isHorizontal: bool   
 
 class Board:
-    def __init__(self, vehicles: List[Vehicle], size: int = 6) -> None:
+    def __init__(self, vehicles, size=6):
         self.vehicles = vehicles
         self.size = size
         self.nodesExpanded = 0
 
-    def buildOccupied(self, state: Tuple[int, ...]) -> Set[Tuple[int, int]]:
-        """Build set of occupied cells from current state."""
+    def buildOccupied(self, state):
         occ = set()
         for vid, v in enumerate(self.vehicles):
-            r, c = state[vid << 1], state[(vid << 1) + 1]  # Bit shift instead of multiplication
+            r, c = state[vid << 1], state[(vid << 1) + 1]  
             if v.isHorizontal:
                 occ.update((r, c + k) for k in range(v.length))
             else:
                 occ.update((r + k, c) for k in range(v.length))
         return occ
 
-    def move(self, state: Tuple[int, ...], vid: int, delta: int) -> Tuple[int, ...]:
-        """Create new state by moving vehicle vid by delta positions."""
+    def move(self, state, vid, delta):
         state_list = list(state)
-        idx = vid << 1  # Bit shift for vid * 2
+        idx = vid << 1  
         if self.vehicles[vid].isHorizontal:
             state_list[idx + 1] += delta
         else:
             state_list[idx] += delta
         return tuple(state_list)
 
-    def get_valid_moves(self, state: Tuple[int, ...], vid: int, occ: Set[Tuple[int, int]]) -> List[int]:
-        """Get all valid moves for a specific vehicle."""
+    def get_valid_moves(self, state, vid, occ) :
         moves = []
         v = self.vehicles[vid]
         r, c = state[vid << 1], state[(vid << 1) + 1]
         
         if v.isHorizontal:
-            # Move left
             if c > 0 and (r, c - 1) not in occ:
                 moves.append(-1)
-            # Move right
             tail = c + v.length - 1
             if tail + 1 < self.size and (r, tail + 1) not in occ:
                 moves.append(1)
         else:
-            # Move up
             if r > 0 and (r - 1, c) not in occ:
                 moves.append(-1)
-            # Move down
             tail = r + v.length - 1
             if tail + 1 < self.size and (tail + 1, c) not in occ:
                 moves.append(1)
         
         return moves
 
-    def successors(self, state: Tuple[int, ...]) -> List[Tuple[Tuple[int, ...], Tuple[int, int]]]:
-        """Generate all possible successor states."""
+    def successors(self, state):
         succs = []
         occ = self.buildOccupied(state)
         
@@ -78,20 +67,17 @@ class Board:
         
         return succs
 
-    def isGoal(self, state: Tuple[int, ...]) -> bool:
-        """Check if the red car (vehicle 0) has reached the exit."""
+    def isGoal(self, state):
         red_col = state[1]
         red_tail = red_col + self.vehicles[0].length - 1
         return red_tail == self.size - 1
 
-    def manhattan_distance_heuristic(self, state: Tuple[int, ...]) -> int:
-        """Simple Manhattan distance heuristic."""
+    def manhattan_distance_heuristic(self, state):
         red_col = state[1]
         red_tail = red_col + self.vehicles[0].length - 1
         return max(0, (self.size - 1) - red_tail)
 
-    def blocking_vehicles_heuristic(self, state: Tuple[int, ...]) -> int:
-        """Enhanced heuristic counting blocking vehicles."""
+    def blocking_vehicles_heuristic(self, state):
         red_row, red_col = state[0], state[1]
         red_tail = red_col + self.vehicles[0].length - 1
         gap = max(0, (self.size - 1) - red_tail)
@@ -100,22 +86,18 @@ class Board:
             return 0
         
         blocks = 0
-        # Count vertical vehicles blocking the path
         for vid in range(1, len(self.vehicles)):
             v = self.vehicles[vid]
-            if not v.isHorizontal:  # Only vertical vehicles can block
+            if not v.isHorizontal:  
                 c = state[(vid << 1) + 1]
-                # Check if this vehicle is in the red car's path
                 if red_tail < c <= self.size - 1:
                     r = state[vid << 1]
-                    # Check if it overlaps with red car's row
                     if r <= red_row < r + v.length:
                         blocks += 1
         
         return gap + blocks
 
-    def aStar(self, start_state: Tuple[int, ...], heuristic: str = 'blocking') -> Optional[Tuple[List[Tuple[int, int]], int]]:
-        """A* search implementation with selectable heuristic."""
+    def aStar(self, start_state, heuristic = 'blocking'):
         h_func = self.blocking_vehicles_heuristic if heuristic == 'blocking' else self.manhattan_distance_heuristic
         
         g_cost = {start_state: 0}
@@ -138,7 +120,7 @@ class Board:
             
             for next_state, move in self.successors(current):
                 vid, _ = move
-                move_cost = self.vehicles[vid].length  # Cost = vehicle length
+                move_cost = self.vehicles[vid].length  
                 g_next = g_cur + move_cost
                 
                 if g_next < g_cost.get(next_state, float('inf')):
@@ -149,8 +131,7 @@ class Board:
         
         return None
 
-    def bfs(self, start_state: Tuple[int, ...]) -> Optional[List[Tuple[int, int]]]:
-        """Breadth-First Search implementation."""
+    def bfs(self, start_state):
         queue = deque([start_state])
         parent = {start_state: None}
         visited = {start_state}
@@ -171,8 +152,7 @@ class Board:
         
         return None
 
-    def ucs(self, start_state: Tuple[int, ...]) -> Optional[Tuple[List[Tuple[int, int]], int]]:
-        """Uniform-Cost Search implementation."""
+    def ucs(self, start_state):
         g_cost = {start_state: 0}
         pq = [(0, start_state)]
         parent = {start_state: None}
@@ -202,8 +182,7 @@ class Board:
         
         return None
 
-    def ids(self, start_state: Tuple[int, ...], max_depth: int = 100) -> Optional[List[Tuple[int, int]]]:
-        """Iterative Deepening Search implementation."""
+    def ids(self, start_state, max_depth = 100):
         for depth_limit in range(max_depth + 1):
             self.nodesExpanded = 0
             result = self._dfs_limited(start_state, depth_limit)
@@ -211,8 +190,7 @@ class Board:
                 return result
         return None
 
-    def _dfs_limited(self, start_state: Tuple[int, ...], depth_limit: int) -> Optional[List[Tuple[int, int]]]:
-        """Depth-limited search helper for IDS."""
+    def _dfs_limited(self, start_state, depth_limit):
         stack = [(start_state, 0, [])]
         visited = set()
         
@@ -236,8 +214,7 @@ class Board:
         return None
 
     @staticmethod
-    def _reconstruct_path(parent: Dict, goal_state: Tuple[int, ...]) -> List[Tuple[int, int]]:
-        """Reconstruct path from parent pointers."""
+    def _reconstruct_path(parent, goal_state):
         path = []
         current = goal_state
         
@@ -248,15 +225,11 @@ class Board:
         path.reverse()
         return path
 
-    # Legacy methods for backward compatibility
     def reconstruct(self, parent, state):
-        """Legacy method for backward compatibility."""
         return self._reconstruct_path(parent, state)
 
-    def successorsBfs(self, state: Tuple[int, ...]):
-        """Legacy method for backward compatibility."""
+    def successorsBfs(self, state):
         return self.successors(state)
 
-    def heuristic(self, state: Tuple[int, ...]) -> int:
-        """Legacy method for backward compatibility."""
+    def heuristic(self, state):
         return self.blocking_vehicles_heuristic(state)
