@@ -61,6 +61,7 @@ class RushHourGame:
         self.nodesExpanded = 0
         self.peakMemoryKb = 0.0
         self.solutionMoves = []
+        self.totalCost = 0
         
         # Load assets
         self.loadAssets()
@@ -462,7 +463,11 @@ class RushHourGame:
                 self.gameState = GameState.FINISHED
                 return
             
+            # Calculate total cost for IDS
+            self.totalCost = sum(self.vehicles[vid].length for vid, _ in moves)
+            
             print(f"IDS Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
+            print(f"Total cost: {self.totalCost}")
             print(f"Nodes expanded: {self.nodesExpanded}")
             print(f"Peak memory usage: {self.peakMemoryKb:.2f} KB")
             
@@ -490,6 +495,7 @@ class RushHourGame:
             print(f"Error running IDS: {e}")
             self.solutionPath = [f"Error: {e}"]
             self.solutionMoves = []
+            self.totalCost = 0
             self.gameState = GameState.FINISHED
 
     def runUcs(self):
@@ -573,6 +579,7 @@ class RushHourGame:
         self.searchTime = 0.0
         self.nodesExpanded = 0
         self.peakMemoryKb = 0.0
+        self.totalCost = 0
         
         # Reset car positions to original
         if hasattr(self, 'originalPositions'):
@@ -783,6 +790,10 @@ class RushHourGame:
             
             if hasattr(self, 'solutionMoves') and self.solutionMoves:
                 metricsData.append(f"Solution Length: {len(self.solutionMoves)} moves")
+                
+            # Add total cost only for UCS and A* algorithms
+            if hasattr(self, 'totalCost') and self.currentAlgorithm in [Algorithm.UCS, Algorithm.A_STAR]:
+                metricsData.append(f"Total Cost: {self.totalCost}")
                 
             # Display metrics
             for i, metric in enumerate(metricsData):
