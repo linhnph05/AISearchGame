@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import heapq
 import tracemalloc
 
-# Import from new modular files
 from vehicle import Vehicle, Board
 from colors import Colors
 from gameModels import GameState, Algorithm, Car

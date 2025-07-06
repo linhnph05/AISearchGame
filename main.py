@@ -3,7 +3,7 @@ from pygame.locals import *
 from pygame import mixer
 import sys, mainMenu,  option
 import game
-# Colors
+
 WHITE = (255, 255, 255)
 RED   = (255,   0,   0)
 GREEN = (  0, 255,   0)
@@ -14,13 +14,11 @@ mixer.init()
 FPS = 60
 fpsClock = pygame.time.Clock()
 
-# Screen, Caption, Background
 screen = pygame.display.set_mode((number.WINDOWWIDTH, number.WINDOWHEIGHT))
 pygame.display.set_caption('Rush Hour Solver')
 background = pygame.image.load("Resource/background.jpg")
 background = pygame.transform.scale(background, (number.WINDOWWIDTH, number.WINDOWHEIGHT))
 
-# Icon
 icon = pygame.image.load("Resource/icon.png")
 pygame.display.set_icon(icon)
 

@@ -1,11 +1,10 @@
 import pygame, sys
 import os, number
 
-# Colors - Modern Dark Theme
-DARK_BG = (16, 24, 40)        # Dark blue-gray background
-CARD_BG = (239, 68, 68)       # Card background
-ACCENT_RED = (249, 120, 102)  # Coral red for accents
-ACCENT_ORANGE = (250, 139, 72) # Orange accent for gradient
+DARK_BG = (16, 24, 40)        
+CARD_BG = (239, 68, 68)       
+ACCENT_RED = (249, 120, 102)  
+ACCENT_ORANGE = (250, 139, 72) 
 WHITE = (255, 255, 255)
 LIGHT_GRAY = (212, 213, 216)
 TRANSPARENT = (0, 0, 0, 0)
@@ -77,7 +76,6 @@ class Button:
             return True
         return False
 
-# Create buttons
 playButton = Button(
     number.WINDOWWIDTH//2 - 175, number.WINDOWHEIGHT//2 + 40, 
     350, 60, "Play Game", fontInline
@@ -121,15 +119,13 @@ def mainmenux():
             except (AttributeError, TypeError):
                 pass
     
-    # Render title with gradient
+
     titleText = renderGradientText("Rush Hour Solver", fontHeading, ACCENT_RED, ACCENT_ORANGE)
     screen.blit(titleText, (500, 60))
     
-    # Render subtitle
     subtitle = fontSubheading.render("AI-powered traffic puzzle solver", True, LIGHT_GRAY)
     screen.blit(subtitle, (550, 150))
     
-    # Draw buttons and handle clicks
     playButton.draw(screen, mousePosition)
     if playButton.handleClick(click):
         number.currentScreen = 1

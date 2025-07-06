@@ -14,9 +14,9 @@ class Algorithm(Enum):
 
 class Car:
     def __init__(self, x: int, y: int, size: int, orientation: str, carId: int = 0):
-        self.x = x  # row position (from file format)
-        self.y = y  # column position (from file format)
+        self.x = x  
+        self.y = y 
         self.size = size
-        self.orientation = orientation  # 'H' for horizontal, 'V' for vertical
+        self.orientation = orientation  
         self.carId = carId
-        self.isTarget = carId == 0  # First car (car 0) is the target car (red car)
+        self.isTarget = carId == 0  
