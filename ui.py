@@ -11,12 +11,9 @@ class Button:
         self.isHovered = False
         self.isPressed = False
         self.icon = icon
-        self.enabled = True
         self.radius = 8  
         
     def handleEvent(self, event):
-        if not self.enabled:
-            return
             
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
@@ -30,9 +27,7 @@ class Button:
             self.isHovered = self.rect.collidepoint(event.pos)
     
     def draw(self, screen):
-        if not self.enabled:
-            color = Colors.BUTTON_DISABLED
-        elif self.isPressed:
+        if self.isPressed:
             color = Colors.BUTTON_PRESSED
         elif self.isHovered:
             color = Colors.BUTTON_HOVER
@@ -51,15 +46,15 @@ class Button:
         screen.blit(textSurface, textRect)
 
 class Dropdown:
-    def __init__(self, x, y, width, height, options, 
-                 font, initialSelection = 0, label = None):
+    def __init__(self, x, y, width, height, text,  
+                 font, options, initialSelection = 0):
         self.rect = pygame.Rect(x, y, width, height)
         self.options = options
         self.font = font
         self.selectedIndex = initialSelection
         self.isOpen = False
         self.optionRects = []
-        self.label = label
+        self.text = text
         self.radius = 8  
         
         for i in range(len(options)):
@@ -76,12 +71,10 @@ class Dropdown:
                         self.selectedIndex = i
                         self.isOpen = False
                         break
-                else:
-                    self.isOpen = False
     
     def draw(self, screen):
-        if self.label:
-            labelSurface = self.font.render(self.label, True, Colors.TEXT_COLOR)
+        if self.text:
+            labelSurface = self.font.render(self.text, True, Colors.TEXT_COLOR)
             labelY = self.rect.top - self.font.get_height() - 5
             screen.blit(labelSurface, (self.rect.left, labelY))
         

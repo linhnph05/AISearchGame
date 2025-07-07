@@ -3,7 +3,7 @@ import number
 import time
 import tracemalloc
 from vehicle import Vehicle, Board
-from gameModels import GameState, Algorithm, Car
+from gameModels import GameState, Algorithm
 from ui import Button, Dropdown
 from colors import Colors
 
@@ -22,7 +22,6 @@ class RushHourGame:
         icon = pygame.image.load("Resource/icon.png")
         pygame.display.set_icon(icon)
         
-        self.clock = pygame.time.Clock()
         self.running = True
         self.gameState = GameState.STOPPED
         
@@ -37,7 +36,6 @@ class RushHourGame:
         
         self.layout()
         
-        self.cars = []
         self.vehicles = []
         self.board = None
         self.initialState = None
@@ -95,38 +93,20 @@ class RushHourGame:
         self.gridY = self.gridCardY + self.gridPadding + 50
     
     def loadAssets(self):
-        self.playIcon = None
-        self.pauseIcon = None
         self.resetIcon = pygame.image.load("Resource/reset.png")
         self.resetIcon = pygame.transform.scale(self.resetIcon, (20, 20))
         
         self.carImages = []
         for i in range(1, 9):
-            try:
-                image = pygame.image.load(f"Resource/car{i}.png")
-                self.carImages.append(image)
-            except pygame.error:
-                print(f"Warning: car{i}.png not found")
-                self.carImages.append(None)
-        
+            image = pygame.image.load(f"Resource/car{i}.png")
+            self.carImages.append(image)
+                
         self.truckImages = []
         for i in range(1, 8):
-            try:
-                image = pygame.image.load(f"Resource/truck{i}.png")
-                self.truckImages.append(image)
-            except pygame.error:
-                print(f"Warning: truck{i}.png not found")
-                self.truckImages.append(None)
+            image = pygame.image.load(f"Resource/truck{i}.png")
+            self.truckImages.append(image)
         
-        try:
-            self.targetCarImage = pygame.image.load("Resource/target.png")
-        except pygame.error:
-            print("Warning: target.png not found, using car1.png for target")
-            try:
-                self.targetCarImage = pygame.image.load("Resource/car1.png")
-            except pygame.error:
-                print("Warning: car1.png also not found, using default car appearance")
-                self.targetCarImage = None
+        self.targetCarImage = pygame.image.load("Resource/target.png")
         
     def setupUI(self):
         controlCardX = self.leftColumnX
@@ -145,19 +125,19 @@ class RushHourGame:
         algorithms = [alg.value for alg in Algorithm]
         self.algorithmDropdown = Dropdown(
             contentX, contentY+20, buttonWidth, dropdownHeight,
-            algorithms, self.mediumFont, 0, "Algorithm"
+            "Algorithm", self.mediumFont, algorithms
         )
         
         self.mapDropdown = Dropdown(
             contentX, contentY + dropdownHeight + buttonSpacing * 2+20, 
-            buttonWidth, dropdownHeight,
-            self.availableMaps, self.mediumFont, 0, "Map"
+            buttonWidth, dropdownHeight, "Map",
+             self.mediumFont, self.availableMaps,
         )
         
         self.playButton = Button(
             contentX, contentY + (dropdownHeight + buttonSpacing) * 3,
             buttonWidth, buttonHeight,
-            "Solve", self.buttonFont, self.playGame, self.playIcon
+            "Solve", self.buttonFont, self.playGame
         )
         
         actionButtonsY = contentY + (dropdownHeight + buttonSpacing) * 3 + buttonHeight + buttonSpacing
@@ -167,7 +147,7 @@ class RushHourGame:
             contentX, 
             actionButtonsY,
             buttonWidth - resetBtnSize - 10, resetBtnSize,
-            "Pause", self.mediumFont, self.pauseGame, self.pauseIcon
+            "Pause", self.mediumFont, self.pauseGame
         )
         
         self.resetButton = Button(
@@ -194,65 +174,48 @@ class RushHourGame:
         number.currentScreen = 0
     
     def loadMap(self, filename):
-        self.cars = []
         self.vehicles = []
         
-        try:
-            with open(filename, 'r') as file:
-                lines = file.readlines()
-                
-            carId = 0
-            for line in lines:
-                line = line.strip()
-                if line:
-                    parts = line.split()
-                    if len(parts) == 4:
-                        x, y, size, orientation = int(parts[0]), int(parts[1]), int(parts[2]), parts[3]
-                        self.cars.append(Car(x, y, size, orientation, carId))
-                        self.vehicles.append(Vehicle(carId, x, y, size, orientation == 'H'))
-                        carId += 1
-                        
-        except FileNotFoundError:
-            print(f"File {filename} not found, using default configuration")
-            carsData = [
-                (2, 0, 2, 'H', 0),
-                (0, 0, 2, 'V', 1),
-                (0, 3, 2, 'V', 2),
-                (1, 4, 2, 'V', 3),
-                (3, 2, 3, 'H', 4),
-                (5, 0, 3, 'H', 5),
-            ]
+        with open(filename, 'r') as file:
+            lines = file.readlines()
             
-            for x, y, size, orientation, carId in carsData:
-                self.cars.append(Car(x, y, size, orientation, carId))
-                self.vehicles.append(Vehicle(carId, x, y, size, orientation == 'H'))
+        carId = 0
+        for line in lines:
+            line = line.strip()
+            if line:
+                parts = line.split()
+                if len(parts) == 4:
+                    x, y, size, orientation = int(parts[0]), int(parts[1]), int(parts[2]), parts[3]
+                    self.vehicles.append(Vehicle(carId, x, y, size, orientation == 'H'))
+                    carId += 1
+            
+        
         
         self.board = Board(self.vehicles)
         self.initialState = tuple([coord for v in self.vehicles for coord in (v.row, v.col)])
         
-        self.originalPositions = [(car.x, car.y) for car in self.cars]
+        self.originalPositions = [(vehicle.row, vehicle.col) for vehicle in self.vehicles]
     
     def playGame(self):
         if self.gameState == GameState.STOPPED:
-            if self.currentAlgorithm == Algorithm.A_STAR:
-                self.runAStar()
-            elif self.currentAlgorithm == Algorithm.BFS:
-                self.runBfs()
-            elif self.currentAlgorithm == Algorithm.IDS:
-                self.runIds()
-            elif self.currentAlgorithm == Algorithm.UCS:
-                self.runUcs()
-            else:
-                self.runAStar()
+            self.runAlgorithm(self.currentAlgorithm)
         elif self.gameState == GameState.PAUSED:
             self.gameState = GameState.PLAYING
     
-    def runAStar(self):
+    def runAlgorithm(self, algorithm):
         if not self.board or not self.initialState:
             print("No board or initial state available")
             return
-            
-        print("Running A* algorithm...")
+        
+        algorithm_names = {
+            Algorithm.A_STAR: "A*",
+            Algorithm.BFS: "BFS",
+            Algorithm.IDS: "IDS (Iterative Deepening Search)",
+            Algorithm.UCS: "UCS (Uniform-Cost Search)"
+        }
+        
+        algo_name = algorithm_names.get(algorithm, "Unknown")
+        print(f"Running {algo_name} algorithm...")
         self.gameState = GameState.PLAYING
         
         tracemalloc.start()
@@ -260,7 +223,17 @@ class RushHourGame:
         startTime = time.time()
         
         try:
-            result = self.board.aStar(self.initialState)
+            if algorithm == Algorithm.A_STAR:
+                result = self.board.aStar(self.initialState)
+            elif algorithm == Algorithm.BFS:
+                result = self.board.bfs(self.initialState)
+            elif algorithm == Algorithm.IDS:
+                result = self.board.ids(self.initialState, max_depth=100)
+            elif algorithm == Algorithm.UCS:
+                result = self.board.ucs(self.initialState)
+            else:
+                result = self.board.aStar(self.initialState)
+            
             endTime = time.time()
             endCurrent, endPeak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
@@ -270,16 +243,21 @@ class RushHourGame:
             self.peakMemoryKb = (endPeak - startCurrent) / 1024
             
             if result is None:
-                print("No solution found!")
-                self.solutionPath = ["No solution found with A*"]
+                error_msg = "No solution found within depth limit!" if algorithm == Algorithm.IDS else "No solution found!"
+                print(error_msg)
+                self.solutionPath = [f"No solution found with {algo_name}" + (" (depth limit exceeded)" if algorithm == Algorithm.IDS else "")]
                 self.solutionMoves = []
                 self.totalCost = 0
                 self.gameState = GameState.FINISHED
                 return
             
-            moves, self.totalCost = result
+            if algorithm in [Algorithm.A_STAR, Algorithm.UCS]:
+                moves, self.totalCost = result
+            else:
+                moves = result
+                self.totalCost = sum(self.vehicles[vid].length for vid, _ in moves)
             
-            print(f"A* Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
+            print(f"{algo_name} Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
             print(f"Total cost: {self.totalCost}")
             print(f"Nodes expanded: {self.nodesExpanded}")
             print(f"Peak memory usage: {self.peakMemoryKb:.2f} KB")
@@ -304,195 +282,7 @@ class RushHourGame:
             
         except Exception as e:
             tracemalloc.stop()
-            print(f"Error running A*: {e}")
-            self.solutionPath = [f"Error: {e}"]
-            self.solutionMoves = []
-            self.totalCost = 0
-            self.gameState = GameState.FINISHED
-    
-    def runBfs(self):
-        if not self.board or not self.initialState:
-            print("No board or initial state available")
-            return
-            
-        print("Running BFS algorithm...")
-        self.gameState = GameState.PLAYING
-        
-        tracemalloc.start()
-        startCurrent, startPeak = tracemalloc.get_traced_memory()
-        startTime = time.time()
-        
-        try:
-            moves = self.board.bfs(self.initialState)
-            endTime = time.time()
-            endCurrent, endPeak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-            
-            self.searchTime = endTime - startTime
-            self.nodesExpanded = self.board.nodesExpanded
-            self.peakMemoryKb = (endPeak - startCurrent) / 1024
-            
-            if moves is None:
-                print("No solution found!")
-                self.solutionPath = ["No solution found with BFS"]
-                self.solutionMoves = []
-                self.totalCost = 0
-                self.gameState = GameState.FINISHED
-                return
-            
-            self.totalCost = sum(self.vehicles[vid].length for vid, _ in moves)
-            
-            print(f"BFS Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
-            print(f"Total cost: {self.totalCost}")
-            print(f"Nodes expanded: {self.nodesExpanded}")
-            print(f"Peak memory usage: {self.peakMemoryKb:.2f} KB")
-            
-            self.solutionMoves = moves
-            self.solutionPath = []
-            self.currentGameState = self.initialState
-            
-            for vid, delta in moves:
-                vehicleName = f"Car {vid}" if vid != 0 else "Target Car"
-                direction = ""
-                
-                if self.vehicles[vid].isHorizontal:
-                    direction = "right" if delta > 0 else "left"
-                else:
-                    direction = "down" if delta > 0 else "up"
-                
-                moveDesc = f"{vehicleName} moves {abs(delta)} cell{'s' if abs(delta) > 1 else ''} {direction}"
-                self.solutionPath.append(moveDesc)
-            
-            self.solutionPath.append("Target reached!")
-            
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Error running BFS: {e}")
-            self.solutionPath = [f"Error: {e}"]
-            self.solutionMoves = []
-            self.totalCost = 0
-            self.gameState = GameState.FINISHED
-
-    def runIds(self):
-        if not self.board or not self.initialState:
-            print("No board or initial state available")
-            return
-            
-        print("Running IDS (Iterative Deepening Search) algorithm...")
-        self.gameState = GameState.PLAYING
-        
-        tracemalloc.start()
-        startCurrent, startPeak = tracemalloc.get_traced_memory()
-        startTime = time.time()
-        
-        try:
-            moves = self.board.ids(self.initialState, maxDepth=100)
-            endTime = time.time()
-            endCurrent, endPeak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-            
-            self.searchTime = endTime - startTime
-            self.nodesExpanded = self.board.nodesExpanded
-            self.peakMemoryKb = (endPeak - startCurrent) / 1024
-            
-            if moves is None:
-                print("No solution found within depth limit!")
-                self.solutionPath = ["No solution found with IDS (depth limit exceeded)"]
-                self.solutionMoves = []
-                self.gameState = GameState.FINISHED
-                return
-            
-            self.totalCost = sum(self.vehicles[vid].length for vid, _ in moves)
-            
-            print(f"IDS Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
-            print(f"Total cost: {self.totalCost}")
-            print(f"Nodes expanded: {self.nodesExpanded}")
-            print(f"Peak memory usage: {self.peakMemoryKb:.2f} KB")
-            
-            self.solutionMoves = moves
-            self.solutionPath = []
-            self.currentGameState = self.initialState
-            
-            for vid, delta in moves:
-                vehicleName = f"Car {vid}" if vid != 0 else "Target Car"
-                direction = ""
-                
-                if self.vehicles[vid].isHorizontal:
-                    direction = "right" if delta > 0 else "left"
-                else:
-                    direction = "down" if delta > 0 else "up"
-                
-                moveDesc = f"{vehicleName} moves {abs(delta)} cell{'s' if abs(delta) > 1 else ''} {direction}"
-                self.solutionPath.append(moveDesc)
-            
-            self.solutionPath.append("Target reached!")
-            
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Error running IDS: {e}")
-            self.solutionPath = [f"Error: {e}"]
-            self.solutionMoves = []
-            self.totalCost = 0
-            self.gameState = GameState.FINISHED
-
-    def runUcs(self):
-        if not self.board or not self.initialState:
-            print("No board or initial state available")
-            return
-            
-        print("Running UCS (Uniform-Cost Search) algorithm...")
-        self.gameState = GameState.PLAYING
-        
-        tracemalloc.start()
-        startCurrent, startPeak = tracemalloc.get_traced_memory()
-        startTime = time.time()
-        
-        try:
-            result = self.board.ucs(self.initialState)
-            endTime = time.time()
-            endCurrent, endPeak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-            
-            self.searchTime = endTime - startTime
-            self.nodesExpanded = self.board.nodesExpanded
-            self.peakMemoryKb = (endPeak - startCurrent) / 1024
-            
-            if result is None:
-                print("No solution found!")
-                self.solutionPath = ["No solution found with UCS"]
-                self.solutionMoves = []
-                self.totalCost = 0
-                self.gameState = GameState.FINISHED
-                return
-            
-            moves, self.totalCost = result
-            
-            print(f"UCS Solution found in {self.searchTime:.3f}s with {len(moves)} moves")
-            print(f"Total cost: {self.totalCost}")
-            print(f"Nodes expanded: {self.nodesExpanded}")
-            print(f"Peak memory usage: {self.peakMemoryKb:.2f} KB")
-            
-            self.solutionMoves = moves
-            self.solutionPath = []
-            self.currentGameState = self.initialState
-            
-            for vid, delta in moves:
-                vehicleName = f"Car {vid}" if vid != 0 else "Target Car"
-                direction = ""
-                
-                if self.vehicles[vid].isHorizontal:
-                    direction = "right" if delta > 0 else "left"
-                else:
-                    direction = "down" if delta > 0 else "up"
-                
-                moveDesc = f"{vehicleName} moves {abs(delta)} cell{'s' if abs(delta) > 1 else ''} {direction}"
-                self.solutionPath.append(moveDesc)
-            
-            self.solutionPath.append("Target reached!")
-            
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Error running UCS: {e}")
+            print(f"Error running {algo_name}: {e}")
             self.solutionPath = [f"Error: {e}"]
             self.solutionMoves = []
             self.totalCost = 0
@@ -513,10 +303,17 @@ class RushHourGame:
         self.totalCost = 0
         
         if hasattr(self, 'originalPositions'):
-            for i, (origX, origY) in enumerate(self.originalPositions):
-                if i < len(self.cars):
-                    self.cars[i].x = origX
-                    self.cars[i].y = origY
+            for i, (origRow, origCol) in enumerate(self.originalPositions):
+                if i < len(self.vehicles):
+                    # Create a new Vehicle instance with original position
+                    old_vehicle = self.vehicles[i]
+                    self.vehicles[i] = Vehicle(
+                        old_vehicle.vehicleId,
+                        origRow,  # row
+                        origCol,  # col
+                        old_vehicle.length,
+                        old_vehicle.isHorizontal
+                    )
         else:
             self.loadMap(self.currentMap)
     
@@ -530,10 +327,22 @@ class RushHourGame:
                     if hasattr(self, 'solutionMoves'):
                         vid, delta = self.solutionMoves[self.currentStep]
                         
+                        # Create new Vehicle instance with updated position
+                        old_vehicle = self.vehicles[vid]
                         if self.vehicles[vid].isHorizontal:
-                            self.cars[vid].y += delta
+                            new_row = old_vehicle.row
+                            new_col = old_vehicle.col + delta
                         else:
-                            self.cars[vid].x += delta
+                            new_row = old_vehicle.row + delta  
+                            new_col = old_vehicle.col
+                            
+                        self.vehicles[vid] = Vehicle(
+                            old_vehicle.vehicleId,
+                            new_row,
+                            new_col,
+                            old_vehicle.length,
+                            old_vehicle.isHorizontal
+                        )
                     
                     self.currentStep += 1
                     self.lastMoveTime = currentTime
@@ -587,38 +396,38 @@ class RushHourGame:
         pygame.draw.polygon(self.screen, arrowColor, arrowPoints)
 
     def drawCars(self):
-        for car in self.cars:
-            if car.orientation == 'H':
-                width = car.size * self.cellSize - 10
+        for vehicle in self.vehicles:
+            if vehicle.isHorizontal:
+                width = vehicle.length * self.cellSize - 10
                 height = self.cellSize - 10
             else:
                 width = self.cellSize - 10
-                height = car.size * self.cellSize - 10
+                height = vehicle.length * self.cellSize - 10
             
             carRect = pygame.Rect(
-                self.gridX + car.y * self.cellSize + 5,
-                self.gridY + car.x * self.cellSize + 5,
+                self.gridX + vehicle.col * self.cellSize + 5,
+                self.gridY + vehicle.row * self.cellSize + 5,
                 width, height
             )
             
             carImage = None
             
-            if car.isTarget:
+            if vehicle.vehicleId == 0:  # Target car
                 carImage = self.targetCarImage
                 fallbackColor = Colors.RED
-            elif car.size == 2:
-                imageIndex = (car.carId - 1) % len(self.carImages)
+            elif vehicle.length == 2:
+                imageIndex = (vehicle.vehicleId - 1) % len(self.carImages)
                 carImage = self.carImages[imageIndex] if imageIndex < len(self.carImages) else None
-                fallbackColor = Colors.BLUE if car.carId % 3 == 1 else Colors.GREEN if car.carId % 3 == 2 else (128, 0, 128)
-            elif car.size == 3:
-                imageIndex = (car.carId - 1) % len(self.truckImages)
+                fallbackColor = Colors.BLUE if vehicle.vehicleId % 3 == 1 else Colors.GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
+            elif vehicle.length == 3:
+                imageIndex = (vehicle.vehicleId - 1) % len(self.truckImages)
                 carImage = self.truckImages[imageIndex] if imageIndex < len(self.truckImages) else None
-                fallbackColor = Colors.BLUE if car.carId % 3 == 1 else Colors.GREEN if car.carId % 3 == 2 else (128, 0, 128)
+                fallbackColor = Colors.BLUE if vehicle.vehicleId % 3 == 1 else Colors.GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
             else:
                 fallbackColor = Colors.GRAY
             
             if carImage:
-                if car.orientation == 'H':
+                if vehicle.isHorizontal:
                     scaledImage = pygame.transform.scale(carImage, (height, width))
                     scaledImage = pygame.transform.rotate(scaledImage, -90)
                 else:
@@ -628,9 +437,9 @@ class RushHourGame:
             else:
                 pygame.draw.rect(self.screen, fallbackColor, carRect, border_radius=6)
                 
-                if not car.isTarget:
+                if vehicle.vehicleId != 0:  # Not target car
                     textColor = Colors.WHITE
-                    number = str(car.carId)
+                    number = str(vehicle.vehicleId)
                     text = self.smallFont.render(number, True, textColor)
                     textRect = text.get_rect(center=carRect.center)
                     self.screen.blit(text, textRect)
@@ -670,35 +479,51 @@ class RushHourGame:
         metricsContentY = metricsCard.top + 70
         metricsContentX = metricsCard.left + 20
         
-        if self.gameState == GameState.FINISHED and hasattr(self, 'searchTime') and self.searchTime > 0:
-            metricsData = [
-                f"Algorithm: {self.currentAlgorithm.value}",
-                f"Search Time: {self.searchTime:.3f}s",
-                f"Nodes Expanded: {self.nodesExpanded}",
-                f"Peak Memory: {self.peakMemoryKb:.2f} KB"
-            ]
-            
-            if hasattr(self, 'solutionMoves') and self.solutionMoves:
+        if self.gameState == GameState.FINISHED and hasattr(self, 'searchTime'):
+            if self.searchTime > 0 and hasattr(self, 'solutionMoves') and self.solutionMoves:
+                metricsData = [
+                    f"Algorithm: {self.currentAlgorithm.value}",
+                    f"Search Time: {self.searchTime:.3f}s",
+                    f"Nodes Expanded: {self.nodesExpanded}",
+                    f"Peak Memory: {self.peakMemoryKb:.2f} KB"
+                ]
+                
                 metricsData.append(f"Solution Length: {len(self.solutionMoves)} moves")
+                    
+                if hasattr(self, 'totalCost') and self.currentAlgorithm in [Algorithm.UCS, Algorithm.A_STAR]:
+                    metricsData.append(f"Total Cost: {self.totalCost}")
+                    
+                for i, metric in enumerate(metricsData):
+                    metricSurface = self.mediumFont.render(metric, True, Colors.WHITE)
+                    self.screen.blit(metricSurface, 
+                                    (metricsContentX, metricsContentY + i * 40))
+                    
+                if self.currentStep >= len(self.solutionMoves):
+                    successCard = pygame.Rect(
+                        metricsCard.left, metricsCard.bottom + 20,
+                        metricsCard.width, 70
+                    )
+                    pygame.draw.rect(self.screen, Colors.ACCENT_GREEN, successCard, border_radius=12)
+                    
+                    successText = self.buttonFont.render("Puzzle Solved!", True, Colors.WHITE)
+                    successRect = successText.get_rect(center=successCard.center)
+                    self.screen.blit(successText, successRect)
+            elif self.searchTime > 0:
+                noSolutionText = self.mediumFont.render("No Solution Found", True, Colors.ACCENT_RED)
+                noSolutionRect = noSolutionText.get_rect(centerx=metricsCard.centerx, y=metricsContentY + 40)
+                self.screen.blit(noSolutionText, noSolutionRect)
                 
-            if hasattr(self, 'totalCost') and self.currentAlgorithm in [Algorithm.UCS, Algorithm.A_STAR]:
-                metricsData.append(f"Total Cost: {self.totalCost}")
+                metricsData = [
+                    f"Algorithm: {self.currentAlgorithm.value}",
+                    f"Search Time: {self.searchTime:.3f}s",
+                    f"Nodes Expanded: {self.nodesExpanded}",
+                    f"Peak Memory: {self.peakMemoryKb:.2f} KB"
+                ]
                 
-            for i, metric in enumerate(metricsData):
-                metricSurface = self.mediumFont.render(metric, True, Colors.WHITE)
-                self.screen.blit(metricSurface, 
-                                (metricsContentX, metricsContentY + i * 40))
-                
-            if self.solutionMoves and self.currentStep >= len(self.solutionMoves):
-                successCard = pygame.Rect(
-                    metricsCard.left, metricsCard.bottom + 20,
-                    metricsCard.width, 70
-                )
-                pygame.draw.rect(self.screen, Colors.ACCENT_GREEN, successCard, border_radius=12)
-                
-                successText = self.buttonFont.render("Puzzle Solved!", True, Colors.WHITE)
-                successRect = successText.get_rect(center=successCard.center)
-                self.screen.blit(successText, successRect)
+                for i, metric in enumerate(metricsData):
+                    metricSurface = self.smallFont.render(metric, True, Colors.WHITE)
+                    self.screen.blit(metricSurface, 
+                                    (metricsContentX, metricsContentY + 80 + i * 30))
         else:
             placeholder = self.smallFont.render("Click \"Solve\" to see", True, Colors.WHITE)
             placeholder2 = self.smallFont.render("performance metrics", True, Colors.WHITE)
@@ -774,20 +599,10 @@ class RushHourGame:
             
         self.update()
         
-        # Draw everything in proper order
-        self.drawUI()      # Background and UI elements first
-        self.drawGrid()    # Then the grid
-        self.drawCars()    # Then the cars on top of the grid
+        self.drawUI()      
+        self.drawGrid()    
+        self.drawCars()    
         
         pygame.display.flip()
         return True
 
-def main():
-    clock = pygame.time.Clock()
-    game = RushHourGame()
-    
-    running = True
-    while running and number.currentScreen == 1:
-        
-        running = game.runFrame()
-        clock.tick(60)
