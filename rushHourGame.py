@@ -414,15 +414,16 @@ class RushHourGame:
             
             if vehicle.vehicleId == 0:  # Target car
                 carImage = self.targetCarImage
-                fallbackColor = Colors.RED
+                fallbackColor = Colors.ACCENT_RED
+
             elif vehicle.length == 2:
                 imageIndex = (vehicle.vehicleId - 1) % len(self.carImages)
                 carImage = self.carImages[imageIndex] if imageIndex < len(self.carImages) else None
-                fallbackColor = Colors.BLUE if vehicle.vehicleId % 3 == 1 else Colors.GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
+                fallbackColor = Colors.ACCENT_BLUE if vehicle.vehicleId % 3 == 1 else Colors.ACCENT_GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
             elif vehicle.length == 3:
                 imageIndex = (vehicle.vehicleId - 1) % len(self.truckImages)
                 carImage = self.truckImages[imageIndex] if imageIndex < len(self.truckImages) else None
-                fallbackColor = Colors.BLUE if vehicle.vehicleId % 3 == 1 else Colors.GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
+                fallbackColor = Colors.ACCENT_BLUE if vehicle.vehicleId % 3 == 1 else Colors.ACCENT_GREEN if vehicle.vehicleId % 3 == 2 else (128, 0, 128)
             else:
                 fallbackColor = Colors.GRAY
             

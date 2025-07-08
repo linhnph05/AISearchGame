@@ -12,10 +12,7 @@ class Colors:
     GRAY = (128, 128, 128)
     LIGHT_GRAY = (180, 180, 180)
     DARK_GRAY = (70, 70, 70)
-    
-    RED = ACCENT_RED
-    BLUE = ACCENT_BLUE
-    GREEN = ACCENT_GREEN
+
     
     BUTTON_NORMAL = ACCENT_GREEN
     BUTTON_HOVER = (72, 217, 150)
