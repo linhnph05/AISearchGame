@@ -568,11 +568,25 @@ class RushHourGame:
                 number.currentScreen = 0
                 return False
             
-            for button in self.buttons:
-                button.handleEvent(event)
-            
+            # Handle dropdowns first - they take priority over buttons
+            dropdown_handled_event = False
             for dropdown in self.dropdowns:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # Check if click is on dropdown main area or on any open option
+                    if dropdown.rect.collidepoint(event.pos):
+                        dropdown_handled_event = True
+                    elif dropdown.isOpen:
+                        for optionRect in dropdown.optionRects:
+                            if optionRect.collidepoint(event.pos):
+                                dropdown_handled_event = True
+                                break
+                
                 dropdown.handleEvent(event)
+            
+            # Only handle button events if no dropdown consumed the event
+            if not dropdown_handled_event:
+                for button in self.buttons:
+                    button.handleEvent(event)
             
             selectedAlg = self.algorithmDropdown.options[self.algorithmDropdown.selectedIndex]
             for alg in Algorithm:
