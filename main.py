@@ -23,9 +23,9 @@ icon = pygame.image.load("Resource/icon.png")
 pygame.display.set_icon(icon)
 
 
-number.Sound.mainSound.set_volume(number.Sound.soundMusic/float(100))
-number.Sound.mainChannel.play(number.Sound.mainSound)
-number.Sound.mainSound.play(loops=-1)
+# number.Sound.mainSound.set_volume(number.Sound.soundMusic/float(100))
+# number.Sound.mainChannel.play(number.Sound.mainSound)
+# number.Sound.mainSound.play(loops=-1)
 
 while True:
     if number.currentScreen == 0: mainMenu.mainmenux()

@@ -70,7 +70,7 @@ class RushHourGame:
         
         self.leftColumnWidth = int(usableWidth * 0.20)
         self.leftColumnX = 30
-        self.leftColumnY = 200
+        self.leftColumnY = 90
         
         self.centerColumnWidth = int(usableWidth * 0.60)
         self.centerColumnX = self.leftColumnX + self.leftColumnWidth + self.columnPadding - 50
@@ -88,8 +88,8 @@ class RushHourGame:
         self.gridCardX = self.centerColumnX + (self.centerColumnWidth - self.gridCardWidth) // 2
         
         centerColumnAvailableHeight = self.screenHeight - self.headerHeight - (2 * self.columnPadding)
-        self.gridCardY = self.headerHeight + self.columnPadding + ((centerColumnAvailableHeight - self.gridCardHeight) // 2)
-        
+        # self.gridCardY = self.headerHeight + self.columnPadding + ((centerColumnAvailableHeight - self.gridCardHeight) // 2)
+        self.gridCardY = 90
         self.gridY = self.gridCardY + self.gridPadding + 50
     
     def loadAssets(self):
