@@ -72,64 +72,52 @@ class Board:
         red_tail = red_col + self.vehicles[0].length - 1
         return red_tail == self.size - 1
 
-    def manhattan_distance_heuristic(self, state):
-        red_col = state[1]
-        red_tail = red_col + self.vehicles[0].length - 1
-        return max(0, (self.size - 1) - red_tail)
-
-    def blocking_vehicles_heuristic(self, state):
+    def h(self, state):
         red_row, red_col = state[0], state[1]
         red_tail = red_col + self.vehicles[0].length - 1
-        gap = max(0, (self.size - 1) - red_tail)
-        
-        if gap == 0:
-            return 0
-        
+        gap = (self.size - 1) - red_tail
         blocks = 0
-        for vid in range(1, len(self.vehicles)):
-            v = self.vehicles[vid]
-            if not v.isHorizontal:  
-                c = state[(vid << 1) + 1]
-                if red_tail < c <= self.size - 1:
-                    r = state[vid << 1]
-                    if r <= red_row < r + v.length:
-                        blocks += 1
-        
-        return gap + blocks
+        for vid, v in enumerate(self.vehicles[1:], 1):
+            if v.isHorizontal:  
+                continue
+            c = state[vid * 2 + 1]
+            if c == red_tail + 1:
+                r = state[vid * 2]
+                if r <= red_row < r + v.length:
+                    blocks += 1
+        return gap + 2 * blocks
 
-    def aStar(self, start_state, heuristic = 'blocking'):
-        h_func = self.blocking_vehicles_heuristic if heuristic == 'blocking' else self.manhattan_distance_heuristic
-        
+    def aStar(self, start_state):
+        h_func = self.h  
+
         g_cost = {start_state: 0}
         pq = [(h_func(start_state), 0, start_state)]
         parent = {start_state: None}
         self.nodesExpanded = 0
-        
+
         while pq:
             f, g_cur, current = heapq.heappop(pq)
-            
+
             if g_cur > g_cost.get(current, float('inf')):
                 continue
-                
+
             self.nodesExpanded += 1
-            
+
             if self.isGoal(current):
                 path = self._reconstruct_path(parent, current)
                 total_cost = sum(self.vehicles[vid].length for vid, _ in path)
                 return path, total_cost
-            
+
             for next_state, move in self.successors(current):
-                vid, _ = move
-                move_cost = self.vehicles[vid].length  
-                g_next = g_cur + move_cost
-                
+                g_next = g_cur + 1  # cost cố định 1
                 if g_next < g_cost.get(next_state, float('inf')):
                     g_cost[next_state] = g_next
                     parent[next_state] = (current, move)
                     f_next = g_next + h_func(next_state)
                     heapq.heappush(pq, (f_next, g_next, next_state))
-        
+
         return None
+    
 
     def bfs(self, start_state):
         queue = deque([start_state])
@@ -182,12 +170,43 @@ class Board:
         
         return None
 
-    def ids(self, start_state, max_depth = 100):
-        for depth_limit in range(max_depth + 1):
-            self.nodesExpanded = 0
-            result = self._dfs_limited(start_state, depth_limit)
-            if result is not None:
-                return result
+    def ids(self, start_state, max_depth: int = 300):
+        self.nodesExpanded = 0  
+
+        for depth_limit in range(max_depth):
+            visited = {}
+            parent = {start_state: None}
+            found = self._dfs_recursive(start_state, depth_limit, 0, visited, parent)
+            if found:
+                return self._reconstruct_path(parent, found)
+        return None
+
+
+    def _dfs_recursive(
+        self,
+        state,
+        depth_limit: int,
+        depth: int,
+        visited: dict,
+        parent: dict
+    ):
+
+        if state in visited and visited[state] <= depth:
+            return None
+
+        visited[state] = depth
+        self.nodesExpanded += 1
+
+        if self.isGoal(state):  
+            return state
+
+        if depth < depth_limit:
+            for s2, move in self.successors(state):
+                if s2 not in visited or visited[s2] > depth + 1:
+                    parent[s2] = (state, move)
+                    found = self._dfs_recursive(s2, depth_limit, depth + 1, visited, parent)
+                    if found:
+                        return found
         return None
 
     def _dfs_limited(self, start_state, depth_limit):
