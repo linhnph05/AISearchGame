@@ -72,13 +72,14 @@ class Board:
         red_tail = red_col + self.vehicles[0].length - 1
         return red_tail == self.size - 1
 
+    
     def h(self, state):
         red_row, red_col = state[0], state[1]
         red_tail = red_col + self.vehicles[0].length - 1
         gap = (self.size - 1) - red_tail
         blocks = 0
         for vid, v in enumerate(self.vehicles[1:], 1):
-            if v.isHorizontal:  
+            if v.isHorizontal: 
                 continue
             c = state[vid * 2 + 1]
             if c == red_tail + 1:
@@ -87,9 +88,8 @@ class Board:
                     blocks += 1
         return gap + 2 * blocks
 
-    def aStar(self, start_state):
+    def aStar(self, start_state, heuristic='blocking'):
         h_func = self.h  
-
         g_cost = {start_state: 0}
         pq = [(h_func(start_state), 0, start_state)]
         parent = {start_state: None}
@@ -109,7 +109,7 @@ class Board:
                 return path, total_cost
 
             for next_state, move in self.successors(current):
-                g_next = g_cur + 1  # cost cố định 1
+                g_next = g_cur + 1  
                 if g_next < g_cost.get(next_state, float('inf')):
                     g_cost[next_state] = g_next
                     parent[next_state] = (current, move)
@@ -117,7 +117,6 @@ class Board:
                     heapq.heappush(pq, (f_next, g_next, next_state))
 
         return None
-    
 
     def bfs(self, start_state):
         queue = deque([start_state])
@@ -170,41 +169,35 @@ class Board:
         
         return None
 
-    def ids(self, start_state, max_depth: int = 300):
+
+    def ids(self, start_state, max_depth = 300):
         self.nodesExpanded = 0  
 
         for depth_limit in range(max_depth):
             visited = {}
             parent = {start_state: None}
-            found = self._dfs_recursive(start_state, depth_limit, 0, visited, parent)
+            found = self._dls_recursive(start_state, depth_limit, 0, visited, parent)
             if found:
                 return self._reconstruct_path(parent, found)
         return None
 
 
-    def _dfs_recursive(
-        self,
-        state,
-        depth_limit: int,
-        depth: int,
-        visited: dict,
-        parent: dict
-    ):
+    def _dls_recursive(self,state,depth_limit,depth,visited,parent):
 
-        if state in visited and visited[state] <= depth:
+        if state in visited:
             return None
 
         visited[state] = depth
         self.nodesExpanded += 1
 
-        if self.isGoal(state):  
+        if self.isGoal(state):
             return state
 
         if depth < depth_limit:
             for s2, move in self.successors(state):
                 if s2 not in visited or visited[s2] > depth + 1:
                     parent[s2] = (state, move)
-                    found = self._dfs_recursive(s2, depth_limit, depth + 1, visited, parent)
+                    found = self._dls_recursive(s2, depth_limit, depth + 1, visited, parent)
                     if found:
                         return found
         return None
