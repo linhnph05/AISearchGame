@@ -1,5 +1,5 @@
 # AISearchGame
-An AI game that implement some search algorithms, use Pygame for demo
+An AI game that implement some search algorithms, we use Pygame for demo
 
 ## Members:
 1. Nguyễn Phan Hùng Linh – 23127081
