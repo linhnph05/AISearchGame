@@ -176,7 +176,7 @@ class RushHourGame:
     def loadMap(self, filename):
         self.vehicles = []
         
-        with open(filename, 'r') as file:
+        with open(f"Map/{filename}", 'r') as file:
             lines = file.readlines()
             
         carId = 0
